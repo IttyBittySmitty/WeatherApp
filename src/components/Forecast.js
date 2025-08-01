@@ -38,10 +38,12 @@ const Forecast = ({ data, unit, convertTemperature }) => {
   // Group forecast data by day and get the most common weather for each day
   const groupForecastByDay = () => {
     const dailyData = {};
+    const today = new Date().toDateString();
     
     data.list.forEach(item => {
       const date = new Date(item.dt * 1000).toDateString();
-      if (!dailyData[date]) {
+      // Skip today and only include future days
+      if (date !== today && !dailyData[date]) {
         dailyData[date] = {
           date: item.dt,
           temps: [],
@@ -50,17 +52,21 @@ const Forecast = ({ data, unit, convertTemperature }) => {
           windSpeed: []
         };
       }
-      dailyData[date].temps.push(item.main.temp);
-      dailyData[date].humidity.push(item.main.humidity);
-      dailyData[date].windSpeed.push(item.wind.speed);
+      if (date !== today && dailyData[date]) {
+        dailyData[date].temps.push(item.main.temp);
+        dailyData[date].humidity.push(item.main.humidity);
+        dailyData[date].windSpeed.push(item.wind.speed);
+      }
     });
 
-    return Object.values(dailyData).map(day => ({
-      ...day,
-      temp: Math.round(day.temps.reduce((a, b) => a + b, 0) / day.temps.length),
-      humidity: Math.round(day.humidity.reduce((a, b) => a + b, 0) / day.humidity.length),
-      windSpeed: Math.round((day.windSpeed.reduce((a, b) => a + b, 0) / day.windSpeed.length) * 10) / 10
-    }));
+    return Object.values(dailyData)
+      .map(day => ({
+        ...day,
+        temp: Math.round(day.temps.reduce((a, b) => a + b, 0) / day.temps.length),
+        humidity: Math.round(day.humidity.reduce((a, b) => a + b, 0) / day.humidity.length),
+        windSpeed: Math.round((day.windSpeed.reduce((a, b) => a + b, 0) / day.windSpeed.length) * 10) / 10
+      }))
+      .slice(0, 5); // Ensure exactly 5 days (tomorrow onward)
   };
 
   const forecastDays = groupForecastByDay();
